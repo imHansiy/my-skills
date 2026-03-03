@@ -1,27 +1,27 @@
 ---
 name: localtunnel-auto-expose
-description: 当启动新服务或者用户需要外部访问时，自动使用 npx 启动 LocalTunnel，并告诉用户访问公网地址和密码。
+description: Automatically exposes local services using LocalTunnel via npx and provides the public URL along with the access password. Use when starting a new service or when external web access is requested.
 license: MIT
 compatibility: opencode
 ---
 
-# LocalTunnel 自动暴露服务
+# LocalTunnel Auto Expose
 
-## 作用
-当你启动了一个新的本地网络服务（或者运行在特定端口的开发服务器），或者用户明确要求提供外部/公网访问地址来进行演示、Webhook 测试、或者移动端测试时，使用此 Skill。
+## Purpose
+Use this skill when you have started a new local web service (or a development server running on a specific port), or when the user explicitly requests an external/public access address for demonstrations, Webhook testing, or mobile testing.
 
-## 执行步骤
+## Execution Steps
 
-1. **确定端口**：首先确认本地服务运行的端口号（例如 3000, 5173, 8080 等）。如果无法从上下文中得出，请询问用户。
-2. **启动 LocalTunnel**：
-   使用以下命令启动 LocalTunnel，请务必以**后台运行**或**非阻塞方式**启动（例如使用 `run_command` 发送到后台）：
+1. **Determine the Port**: First, confirm the port number the local service is running on (e.g., 3000, 5173, 8080, etc.). If it cannot be inferred from the context, ask the user.
+2. **Start LocalTunnel**:
+   Use the following command to start LocalTunnel. Be sure to run it in **background** or **non-blocking mode** (for example, by using `run_command` and sending to background):
    ```bash
-   npx localtunnel --port <端口号>
+   npx localtunnel --port <PORT>
    ```
-3. **提取公网 URL**：
-   查看 LocalTunnel 的输出状态，它会打印类似 `your url is: https://<随机字符串>.loca.lt`。这就是用户的**公网访问地址**。
-4. **获取访问密码**：
-   LocalTunnel 默认需要一个密码（通常是运行机器的公网 IP）来绕过防钓鱼警告页面。请通过执行以下命令来获取该密码，根据当前操作系统选择对应命令：
+3. **Extract Public URL**:
+   Check the output of LocalTunnel; it will print something like `your url is: https://<random-string>.loca.lt`. This is the user's **public access address**.
+4. **Get Access Password**:
+   LocalTunnel requires a password by default (usually the public IP of the machine running it) to bypass the anti-phishing warning page. Execute the following command to get this password, selecting the appropriate command based on the current OS:
    - **Windows (PowerShell)**:
      ```powershell
      (Invoke-RestMethod https://loca.lt/mytunnelpassword).ToString().Trim()
@@ -34,21 +34,21 @@ compatibility: opencode
      ```bash
      curl -s https://loca.lt/mytunnelpassword
      ```
-5. **告知用户**：
-   获取到 URL 和密码后，使用清晰的 Markdown 格式反馈给用户。
+5. **Inform the User**:
+   Once you have the URL and the password, present them to the user using a clear Markdown format.
 
-## 反馈模板示例
+## Feedback Template Example
 
 ```markdown
-**LocalTunnel 隧道已启动** 🚀
+**LocalTunnel Tunnel Started** 🚀
 
-- **本地服务**: `http://localhost:<端口号>`
-- **公网地址**: `https://<获取到的随机名称>.loca.lt`
-- **访问密码**: `<获取到的密码>`
+- **Local Service**: `http://localhost:<PORT>`
+- **Public URL**: `https://<random-name>.loca.lt`
+- **Access Password**: `<Retrieved Password>`
 
-> **提示**：首次在浏览器中访问公网地址时，会要求输入 Endpoint Password，请使用上方的访问密码。关闭对应的后台命令或终端即可停止外部访问。
+> **Tip**: When accessing the public URL in a browser for the first time, you will be prompted to enter the Endpoint Password. Please use the Access Password provided above. You can stop external access by closing the corresponding background command or terminal.
 ```
 
-## 注意事项
-- 如果环境中尚未安装 Node.js/npm，请先提醒或协助用户进行安装。
-- 获取密码的请求（`https://loca.lt/mytunnelpassword`）必须在运行 LocalTunnel 隧道的**同一台机器上**发起，才能获得正确的密码（基于公网 IP）。
+## Notes
+- If Node.js/npm is not installed in the environment, remind or assist the user in installing it first.
+- The request to get the password (`https://loca.lt/mytunnelpassword`) must be initiated on the **same machine** that is running the LocalTunnel tunnel to obtain the correct password (which is based on the public IP).
