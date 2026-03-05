@@ -1,0 +1,8 @@
+{
+  "name": "odoo-docs-manager",
+  "version": "1.0.0",
+  "description": "Automatically convert Odoo module docs to static/description/index.html with AI summarization support.",
+  "author": "Antigravity",
+  "tags": ["odoo", "documentation", "markdown", "automation"],
+  "entrypoint": "SKILL.md"
+}
