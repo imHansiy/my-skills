@@ -1,0 +1,20 @@
+default_profile: local
+profiles:
+  local:
+    host: 127.0.0.1
+    port: 8069
+    protocol: jsonrpc
+    database: odoo
+    username: admin
+    password: admin
+    timeout: 30
+    odoo_version: "19.0"
+  production:
+    host: odoo.example.com
+    port: 443
+    protocol: jsonrpc+ssl
+    database: prod_db
+    username: admin@example.com
+    password: "replace-with-api-key-or-password"
+    timeout: 30
+    odoo_version: "19.0"
