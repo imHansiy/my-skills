@@ -1,7 +1,11 @@
 ---
 name: odoorpc-agent-skill
-# The description is intentionally rich because many agent runtimes use it for skill selection.
-description: Use proactively for Odoo work. Connect agents to Odoo via Python OdooRPC profiles, inspect live records, troubleshoot models/fields/access/modules, and handle guarded create/update/delete workflows. Also covers local Odoo development and operations: odoo.conf inspection, database/addons/data_dir detection, admin login password reset, module static/description documentation, Odoo.sh backup restore, filestore checks, and account/permission repair. Prefer bundled scripts and Odoo ORM/framework workflows over ad-hoc SQL/RPC. Read-only lookups are encouraged when a profile exists; mutations and maintenance actions must be explicit, conservative, auditable, and confirmation-gated.
+description: >-
+  Use proactively for Odoo work. Connect AI coding agents to Odoo through
+  Python OdooRPC profiles, inspect live records, troubleshoot models, fields,
+  access rights, modules, companies, connectors, imports, synchronization
+  issues, odoo.conf, addons paths, backup restore, filestore checks, and
+  guarded create/update/delete workflows.
 license: MIT
 compatibility: Requires Python 3.10+, network access to the target Odoo server, and either uv or a Python environment with odoorpc and PyYAML installed. Designed for Agent Skills-compatible tools including Claude Code, OpenCode, Codex, Manus, and similar coding agents.
 metadata:
