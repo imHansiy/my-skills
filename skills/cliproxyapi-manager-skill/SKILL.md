@@ -1,6 +1,11 @@
 ---
-name: cliproxyapi-manager
-description: Manage CLIProxyAPI or CLIProxyAPIPlus only: save CLIProxyAPI Management API URL and password under the user's home .config/cliproxyapi directory, call every CLIProxyAPI Management API endpoint, manage config/auth files/provider keys/model aliases/logs/usage/OAuth URLs, and work on Windows, Linux, and macOS without opening the web UI.
+name: cliproxyapi-manager-skill
+description: >-
+  Manage CLIProxyAPI or CLIProxyAPIPlus only: save CLIProxyAPI Management API
+  URL and password under the user's home .config/cliproxyapi directory, call
+  every CLIProxyAPI Management API endpoint, manage config/auth
+  files/provider keys/model aliases/logs/usage/OAuth URLs, and work on
+  Windows, Linux, and macOS without opening the web UI.
 ---
 
 # CLIProxyAPI Manager Skill
