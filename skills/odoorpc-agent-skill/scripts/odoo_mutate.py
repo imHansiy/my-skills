@@ -190,12 +190,12 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Guarded OdooRPC mutations. Defaults to dry-run. Outputs JSON.",
         epilog="Examples:\n"
-        "  uv run scripts/odoo_mutate.py create --profile local --model res.partner --values-json '{\"name\":\"Demo\"}'\n"
-        "  uv run scripts/odoo_mutate.py create --profile local --model res.partner --values-json '{\"name\":\"Demo\"}' --execute --confirm CREATE\n"
-        "  uv run scripts/odoo_mutate.py update --profile local --model res.partner --ids 12 --values-json '{\"email\":\"new@example.com\"}'\n"
-        "  uv run scripts/odoo_mutate.py update --profile local --model res.partner --ids 12 --values-json '{\"email\":\"new@example.com\"}' --execute --confirm UPDATE\n"
-        "  uv run scripts/odoo_mutate.py archive --profile local --model res.partner --ids 12 --execute --confirm ARCHIVE\n"
-        "  uv run scripts/odoo_mutate.py delete --profile local --model res.partner --ids 99 --execute --confirm DELETE",
+        "  uv run scripts/odoo_mutate.py --profile local create --model res.partner --values-json '{\"name\":\"Demo\"}'\n"
+        "  uv run scripts/odoo_mutate.py --profile local create --model res.partner --values-json '{\"name\":\"Demo\"}' --execute --confirm CREATE\n"
+        "  uv run scripts/odoo_mutate.py --profile local update --model res.partner --ids 12 --values-json '{\"email\":\"new@example.com\"}'\n"
+        "  uv run scripts/odoo_mutate.py --profile local update --model res.partner --ids 12 --values-json '{\"email\":\"new@example.com\"}' --execute --confirm UPDATE\n"
+        "  uv run scripts/odoo_mutate.py --profile local archive --model res.partner --ids 12 --execute --confirm ARCHIVE\n"
+        "  uv run scripts/odoo_mutate.py --profile local delete --model res.partner --ids 99 --execute --confirm DELETE",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("--profile", help="Profile name. Defaults to config default_profile.")

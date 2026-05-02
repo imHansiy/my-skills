@@ -97,10 +97,10 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Run read-only OdooRPC operations. Outputs JSON.",
         epilog="Examples:\n"
-        "  uv run scripts/odoo_query.py test --profile local\n"
-        "  uv run scripts/odoo_query.py fields --profile local --model res.partner --fields name,email\n"
-        "  uv run scripts/odoo_query.py search-read --profile local --model res.partner --domain-json '[[\"is_company\",\"=\",true]]' --fields name,email --limit 10\n"
-        "  uv run scripts/odoo_query.py count --profile local --model sale.order --domain-json '[[\"state\",\"=\",\"sale\"]]'",
+        "  uv run scripts/odoo_query.py --profile local test\n"
+        "  uv run scripts/odoo_query.py --profile local fields --model res.partner --fields name,email\n"
+        "  uv run scripts/odoo_query.py --profile local search-read --model res.partner --domain-json '[[\"is_company\",\"=\",true]]' --fields name,email --limit 10\n"
+        "  uv run scripts/odoo_query.py --profile local count --model sale.order --domain-json '[[\"state\",\"=\",\"sale\"]]'",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("--profile", help="Profile name. Defaults to config default_profile.")

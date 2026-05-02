@@ -9,7 +9,7 @@ description: >-
 license: MIT
 compatibility: Requires Python 3.10+, network access to the target Odoo server, and either uv or a Python environment with odoorpc and PyYAML installed. Designed for Agent Skills-compatible tools including Claude Code, OpenCode, Codex, Manus, and similar coding agents.
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
   author: "customized-for-siy-han"
 ---
 
@@ -80,6 +80,32 @@ python3 scripts/odoo_config.py --help
 python3 scripts/odoo_query.py --help
 python3 scripts/odoo_mutate.py --help
 ```
+
+## Windows / PowerShell compatibility
+
+All examples in this skill use **bash** syntax. On Windows PowerShell, apply these rules:
+
+1. **No heredoc `<<<`.** Use `--password` directly instead of `--password-stdin` with `<<<`:
+   ```powershell
+   # bash (does NOT work in PowerShell)
+   printf '%s' 'SECRET' | uv run scripts/odoo_config.py set-profile --password-stdin ...
+
+   # PowerShell (correct)
+   uv run scripts/odoo_config.py set-profile ... --password 'SECRET'
+   ```
+
+2. **`--profile` goes BEFORE the subcommand**, not after:
+   ```powershell
+   # WRONG — PowerShell treats --profile as unrecognized
+   uv run scripts/odoo_query.py test --profile winston-test
+
+   # CORRECT
+   uv run scripts/odoo_query.py --profile winston-test test
+   ```
+
+3. **Multi-line backslash `\` does not work.** Use a single long line or PowerShell backtick `` ` `` for line continuation.
+
+4. **Single quotes in passwords.** If the password contains special characters (e.g. `&`, `!`), wrap it in single quotes `'...'` in PowerShell. Double quotes may trigger variable expansion.
 
 ## Configuration location
 
@@ -152,6 +178,49 @@ The config script sets restrictive permissions where supported:
 - `~/.config/odoorpc`: `0700`
 - `~/.config/odoorpc/config.yaml`: `0600`
 
+## Odoo.sh / Odoo Online database name detection
+
+Odoo.sh and Odoo Online instances use **auto-generated database names** that do NOT match the subdomain. For example, `calipokehouse-test.odoo.com` might have database `shanghaimeowai-winston1-dev-31537573`.
+
+**Do not guess the database name.** Instead, query the `/web/database/list` endpoint:
+
+```python
+import requests
+r = requests.post(
+    'https://<HOST>/web/database/list',
+    json={'jsonrpc': '2.0', 'method': 'call', 'params': {}},
+    timeout=15
+)
+print(r.json().get('result'))
+# Returns: ["shanghaimeowai-winston1-dev-31537573"]
+```
+
+Or with `curl`:
+
+```bash
+curl -s -X POST 'https://<HOST>/web/database/list' \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","method":"call","params":{}}'
+```
+
+Then use the returned database name in the profile:
+
+```bash
+uv run scripts/odoo_config.py set-profile \
+  --profile winston-test \
+  --host calipokehouse-test.odoo.com \
+  --port 443 \
+  --protocol jsonrpc+ssl \
+  --database shanghaimeowai-winston1-dev-31537573 \
+  --username admin \
+  --password 'actual-password' \
+  --odoo-version 19.0
+```
+
+**Typical Odoo.sh database name format:** `<org>-<project>-<branch>-<random_digits>`
+
+If `/web/database/list` returns an empty list or is blocked, the instance may have `dbfilter` configured or `list_db = False`. In that case, ask the user for the database name directly.
+
 ## Available scripts
 
 - `scripts/odoo_config.py` — create/list/show/remove local Odoo connection profiles and detect/save Odoo server versions.
@@ -174,8 +243,10 @@ uv run scripts/odoo_config.py list
 ### 2. Test login and show configured/detected Odoo version
 
 ```bash
-uv run scripts/odoo_query.py test --profile local
+uv run scripts/odoo_query.py --profile local test
 ```
+
+**Important:** `--profile` must come BEFORE the subcommand (`test`, `fields`, `search-read`, etc.), not after.
 
 To persist the detected server version into the profile config:
 
@@ -186,14 +257,13 @@ uv run scripts/odoo_config.py detect-version --profile local --save
 ### 3. Inspect a model
 
 ```bash
-uv run scripts/odoo_query.py fields --profile local --model res.partner --fields name,email,phone,is_company
+uv run scripts/odoo_query.py --profile local fields --model res.partner --fields name,email,phone,is_company
 ```
 
 ### 4. Search and read records
 
 ```bash
-uv run scripts/odoo_query.py search-read \
-  --profile local \
+uv run scripts/odoo_query.py --profile local search-read \
   --model res.partner \
   --domain-json '[["is_company", "=", true]]' \
   --fields name,email,phone \
@@ -209,8 +279,7 @@ Use JSON domains only. Do not use Python `eval` for domains.
 Use `res.partner`. Start with `name`, `display_name`, `email`, `phone`, `mobile`, `is_company`, `parent_id`, `company_id`, `country_id`, `vat`, `customer_rank`, and `supplier_rank`.
 
 ```bash
-uv run scripts/odoo_query.py search-read \
-  --profile local \
+uv run scripts/odoo_query.py --profile local search-read \
   --model res.partner \
   --domain-json '[["name", "ilike", "ACME"]]' \
   --fields name,display_name,email,phone,is_company,parent_id,company_id,country_id,customer_rank,supplier_rank \
@@ -222,8 +291,7 @@ uv run scripts/odoo_query.py search-read \
 Use `sale.order`. Start with `name`, `partner_id`, `state`, `date_order`, `amount_total`, `currency_id`, `company_id`, `user_id`, and `invoice_status`.
 
 ```bash
-uv run scripts/odoo_query.py search-read \
-  --profile local \
+uv run scripts/odoo_query.py --profile local search-read \
   --model sale.order \
   --domain-json '[["name", "ilike", "S"]]' \
   --fields name,partner_id,state,date_order,amount_total,currency_id,company_id,user_id,invoice_status \
@@ -235,8 +303,7 @@ uv run scripts/odoo_query.py search-read \
 Use `product.template` for product-level information and `product.product` for variants. Start with `name`, `default_code`, `barcode`, `active`, `sale_ok`, `purchase_ok`, `type`, `categ_id`, `list_price`, `standard_price`, and `qty_available` when available.
 
 ```bash
-uv run scripts/odoo_query.py search-read \
-  --profile local \
+uv run scripts/odoo_query.py --profile local search-read \
   --model product.product \
   --domain-json '[["default_code", "ilike", "SKU"]]' \
   --fields name,display_name,default_code,barcode,active,sale_ok,purchase_ok,type,categ_id,list_price,standard_price,qty_available \
@@ -248,8 +315,7 @@ uv run scripts/odoo_query.py search-read \
 Use `stock.quant` for on-hand quantities, `stock.picking` for transfers, and `stock.move` for stock moves. Stock mutation is high risk; default to read-only diagnostics.
 
 ```bash
-uv run scripts/odoo_query.py search-read \
-  --profile local \
+uv run scripts/odoo_query.py --profile local search-read \
   --model stock.picking \
   --domain-json '[["name", "ilike", "WH"]]' \
   --fields name,partner_id,picking_type_id,location_id,location_dest_id,state,scheduled_date,origin,company_id \
@@ -261,8 +327,7 @@ uv run scripts/odoo_query.py search-read \
 Use `account.move`. Accounting documents are protected. Read them freely when authorized, but do not post, cancel, reset, delete, or change them unless the user gives precise instructions and accepts business/legal risk.
 
 ```bash
-uv run scripts/odoo_query.py search-read \
-  --profile local \
+uv run scripts/odoo_query.py --profile local search-read \
   --model account.move \
   --domain-json '[["name", "ilike", "INV"]]' \
   --fields name,partner_id,move_type,state,payment_state,invoice_date,amount_total,currency_id,company_id \
@@ -274,8 +339,7 @@ uv run scripts/odoo_query.py search-read \
 Use `res.company` and `res.partner`. For a company record, inspect `name`, `parent_id`, `partner_id`, `country_id`, and related partner address fields. Do not mutate `company_id`, `company_ids`, `parent_id`, or company address fields without explicit approval.
 
 ```bash
-uv run scripts/odoo_query.py search-read \
-  --profile local \
+uv run scripts/odoo_query.py --profile local search-read \
   --model res.company \
   --domain-json '[["name", "ilike", "Schaeffler"]]' \
   --fields name,parent_id,partner_id,country_id,company_registry,vat \
@@ -293,8 +357,7 @@ Creating records is state-changing and must be deliberate.
 Default behavior is dry-run:
 
 ```bash
-uv run scripts/odoo_mutate.py create \
-  --profile local \
+uv run scripts/odoo_mutate.py --profile local create \
   --model res.partner \
   --values-json '{"name":"Demo Customer","email":"demo@example.com"}'
 ```
@@ -302,8 +365,7 @@ uv run scripts/odoo_mutate.py create \
 Actual creation requires `--execute` and a confirmation phrase:
 
 ```bash
-uv run scripts/odoo_mutate.py create \
-  --profile local \
+uv run scripts/odoo_mutate.py --profile local create \
   --model res.partner \
   --values-json '{"name":"Demo Customer","email":"demo@example.com"}' \
   --execute \
@@ -331,8 +393,7 @@ Updating existing records is high risk. Follow all rules below.
 Dry-run update:
 
 ```bash
-uv run scripts/odoo_mutate.py update \
-  --profile local \
+uv run scripts/odoo_mutate.py --profile local update \
   --model res.partner \
   --ids 12,13 \
   --values-json '{"category_id":[[6,0,[3]]]}'
@@ -341,8 +402,7 @@ uv run scripts/odoo_mutate.py update \
 Execute update:
 
 ```bash
-uv run scripts/odoo_mutate.py update \
-  --profile local \
+uv run scripts/odoo_mutate.py --profile local update \
   --model res.partner \
   --ids 12,13 \
   --values-json '{"category_id":[[6,0,[3]]]}' \
@@ -371,8 +431,7 @@ Deletion is the most dangerous operation.
 Dry-run delete:
 
 ```bash
-uv run scripts/odoo_mutate.py delete \
-  --profile local \
+uv run scripts/odoo_mutate.py --profile local delete \
   --model res.partner \
   --ids 99
 ```
@@ -380,8 +439,7 @@ uv run scripts/odoo_mutate.py delete \
 Execute delete:
 
 ```bash
-uv run scripts/odoo_mutate.py delete \
-  --profile local \
+uv run scripts/odoo_mutate.py --profile local delete \
   --model res.partner \
   --ids 99 \
   --execute \

@@ -1,0 +1,6 @@
+interface:
+  display_name: "CLIProxyAPI Manager"
+  short_description: "Manage CLIProxyAPI Management API config, providers, aliases, auth files, logs, and usage from Windows/Linux/macOS. No opencode config."
+  default_prompt: "Use the cliproxyapi-manager skill to manage my CLIProxyAPI instance through its Management API only."
+policy:
+  allow_implicit_invocation: true

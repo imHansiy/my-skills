@@ -1,0 +1,404 @@
+[
+  {
+    "method": "GET",
+    "path": "/usage",
+    "body": "none",
+    "purpose": "Retrieve in-memory usage metrics."
+  },
+  {
+    "method": "GET",
+    "path": "/usage/export",
+    "body": "none",
+    "purpose": "Export complete usage snapshot."
+  },
+  {
+    "method": "POST",
+    "path": "/usage/import",
+    "body": "JSON export",
+    "purpose": "Import and merge usage snapshot."
+  },
+  {
+    "method": "GET",
+    "path": "/config",
+    "body": "none",
+    "purpose": "Get parsed runtime config as JSON."
+  },
+  {
+    "method": "GET",
+    "path": "/latest-version",
+    "body": "none",
+    "purpose": "Fetch latest CLIProxyAPI release version string."
+  },
+  {
+    "method": "GET",
+    "path": "/debug",
+    "body": "none",
+    "purpose": "Get debug state."
+  },
+  {
+    "method": "PUT/PATCH",
+    "path": "/debug",
+    "body": "{\"value\": true|false}",
+    "purpose": "Set debug state."
+  },
+  {
+    "method": "GET",
+    "path": "/config.yaml",
+    "body": "none",
+    "purpose": "Download persisted YAML config."
+  },
+  {
+    "method": "PUT",
+    "path": "/config.yaml",
+    "body": "application/yaml",
+    "purpose": "Replace persisted YAML config after validation."
+  },
+  {
+    "method": "GET",
+    "path": "/logging-to-file",
+    "body": "none",
+    "purpose": "Check file logging toggle."
+  },
+  {
+    "method": "PUT/PATCH",
+    "path": "/logging-to-file",
+    "body": "{\"value\": true|false}",
+    "purpose": "Enable/disable file logging."
+  },
+  {
+    "method": "GET",
+    "path": "/logs?after=<unix_ts>",
+    "body": "none",
+    "purpose": "Stream recent log lines."
+  },
+  {
+    "method": "DELETE",
+    "path": "/logs",
+    "body": "none",
+    "purpose": "Clear rotated and active logs."
+  },
+  {
+    "method": "GET",
+    "path": "/request-error-logs",
+    "body": "none",
+    "purpose": "List error request log files."
+  },
+  {
+    "method": "GET",
+    "path": "/request-error-logs/:name",
+    "body": "none",
+    "purpose": "Download a named error log file."
+  },
+  {
+    "method": "GET",
+    "path": "/usage-statistics-enabled",
+    "body": "none",
+    "purpose": "Check usage telemetry collection toggle."
+  },
+  {
+    "method": "PUT/PATCH",
+    "path": "/usage-statistics-enabled",
+    "body": "{\"value\": true|false}",
+    "purpose": "Enable/disable usage telemetry."
+  },
+  {
+    "method": "GET",
+    "path": "/proxy-url",
+    "body": "none",
+    "purpose": "Get global upstream proxy URL."
+  },
+  {
+    "method": "PUT/PATCH",
+    "path": "/proxy-url",
+    "body": "{\"value\":\"socks5://...\"}",
+    "purpose": "Set global proxy URL."
+  },
+  {
+    "method": "DELETE",
+    "path": "/proxy-url",
+    "body": "none",
+    "purpose": "Clear global proxy URL."
+  },
+  {
+    "method": "GET",
+    "path": "/quota-exceeded/switch-project",
+    "body": "none",
+    "purpose": "Get Gemini quota project-switch behavior."
+  },
+  {
+    "method": "PUT/PATCH",
+    "path": "/quota-exceeded/switch-project",
+    "body": "{\"value\": true|false}",
+    "purpose": "Set Gemini quota project-switch behavior."
+  },
+  {
+    "method": "GET",
+    "path": "/quota-exceeded/switch-preview-model",
+    "body": "none",
+    "purpose": "Get preview-model switch behavior."
+  },
+  {
+    "method": "PUT/PATCH",
+    "path": "/quota-exceeded/switch-preview-model",
+    "body": "{\"value\": true|false}",
+    "purpose": "Set preview-model switch behavior."
+  },
+  {
+    "method": "GET",
+    "path": "/api-keys",
+    "body": "none",
+    "purpose": "List client API keys accepted by proxy service."
+  },
+  {
+    "method": "PUT",
+    "path": "/api-keys",
+    "body": "[\"k1\",\"k2\"] or {\"items\":[...]}",
+    "purpose": "Replace client API keys."
+  },
+  {
+    "method": "PATCH",
+    "path": "/api-keys",
+    "body": "{\"old\":\"k1\",\"new\":\"k2\"} or {\"index\":0,\"value\":\"k\"}",
+    "purpose": "Modify one client API key."
+  },
+  {
+    "method": "DELETE",
+    "path": "/api-keys?value=<key>|index=<n>",
+    "body": "none",
+    "purpose": "Delete one client API key."
+  },
+  {
+    "method": "GET",
+    "path": "/gemini-api-key",
+    "body": "none",
+    "purpose": "List Gemini API key entries."
+  },
+  {
+    "method": "PUT",
+    "path": "/gemini-api-key",
+    "body": "array of key entries",
+    "purpose": "Replace Gemini API key entries."
+  },
+  {
+    "method": "PATCH",
+    "path": "/gemini-api-key",
+    "body": "{\"index\":0,\"value\":{...}} or {\"match\":\"key\",\"value\":{...}}",
+    "purpose": "Modify one Gemini API key entry."
+  },
+  {
+    "method": "DELETE",
+    "path": "/gemini-api-key?api-key=<key>|index=<n>",
+    "body": "none",
+    "purpose": "Delete one Gemini API key entry."
+  },
+  {
+    "method": "GET",
+    "path": "/codex-api-key",
+    "body": "none",
+    "purpose": "List Codex API key entries."
+  },
+  {
+    "method": "PUT",
+    "path": "/codex-api-key",
+    "body": "array of key entries",
+    "purpose": "Replace Codex API key entries."
+  },
+  {
+    "method": "PATCH",
+    "path": "/codex-api-key",
+    "body": "{\"index\":0,\"value\":{...}} or {\"match\":\"key\",\"value\":{...}}",
+    "purpose": "Modify one Codex API key entry."
+  },
+  {
+    "method": "DELETE",
+    "path": "/codex-api-key?api-key=<key>|index=<n>",
+    "body": "none",
+    "purpose": "Delete one Codex API key entry."
+  },
+  {
+    "method": "GET",
+    "path": "/request-retry",
+    "body": "none",
+    "purpose": "Get retry count."
+  },
+  {
+    "method": "PUT/PATCH",
+    "path": "/request-retry",
+    "body": "{\"value\": 3}",
+    "purpose": "Set retry count."
+  },
+  {
+    "method": "GET",
+    "path": "/max-retry-interval",
+    "body": "none",
+    "purpose": "Get max retry wait seconds."
+  },
+  {
+    "method": "PUT/PATCH",
+    "path": "/max-retry-interval",
+    "body": "{\"value\": 60}",
+    "purpose": "Set max retry wait seconds."
+  },
+  {
+    "method": "GET",
+    "path": "/request-log",
+    "body": "none",
+    "purpose": "Get request log toggle."
+  },
+  {
+    "method": "PUT/PATCH",
+    "path": "/request-log",
+    "body": "{\"value\": true|false}",
+    "purpose": "Set request log toggle."
+  },
+  {
+    "method": "GET",
+    "path": "/ws-auth",
+    "body": "none",
+    "purpose": "Get WebSocket auth toggle."
+  },
+  {
+    "method": "PUT/PATCH",
+    "path": "/ws-auth",
+    "body": "{\"value\": true|false}",
+    "purpose": "Set WebSocket auth toggle."
+  },
+  {
+    "method": "GET",
+    "path": "/claude-api-key",
+    "body": "none",
+    "purpose": "List Claude API key entries."
+  },
+  {
+    "method": "PUT",
+    "path": "/claude-api-key",
+    "body": "array of key entries",
+    "purpose": "Replace Claude API key entries."
+  },
+  {
+    "method": "PATCH",
+    "path": "/claude-api-key",
+    "body": "{\"index\":0,\"value\":{...}} or {\"match\":\"key\",\"value\":{...}}",
+    "purpose": "Modify one Claude API key entry."
+  },
+  {
+    "method": "DELETE",
+    "path": "/claude-api-key?api-key=<key>|index=<n>",
+    "body": "none",
+    "purpose": "Delete one Claude API key entry."
+  },
+  {
+    "method": "GET",
+    "path": "/openai-compatibility",
+    "body": "none",
+    "purpose": "List OpenAI-compatible upstream providers."
+  },
+  {
+    "method": "PUT",
+    "path": "/openai-compatibility",
+    "body": "array of provider entries",
+    "purpose": "Replace OpenAI-compatible providers."
+  },
+  {
+    "method": "PATCH",
+    "path": "/openai-compatibility",
+    "body": "{\"index\":0,\"value\":{...}} or {\"name\":\"provider\",\"value\":{...}}",
+    "purpose": "Modify one OpenAI-compatible provider."
+  },
+  {
+    "method": "DELETE",
+    "path": "/openai-compatibility?name=<name>|index=<n>",
+    "body": "none",
+    "purpose": "Delete one OpenAI-compatible provider."
+  },
+  {
+    "method": "GET",
+    "path": "/oauth-excluded-models",
+    "body": "none",
+    "purpose": "Get OAuth provider excluded model map."
+  },
+  {
+    "method": "PUT",
+    "path": "/oauth-excluded-models",
+    "body": "{\"openai\":[\"model\"]}",
+    "purpose": "Replace OAuth excluded model map."
+  },
+  {
+    "method": "PATCH",
+    "path": "/oauth-excluded-models",
+    "body": "{\"provider\":\"claude\",\"models\":[\"model\"]}",
+    "purpose": "Upsert/delete one provider model block."
+  },
+  {
+    "method": "DELETE",
+    "path": "/oauth-excluded-models?provider=<provider>",
+    "body": "none",
+    "purpose": "Delete provider model block."
+  },
+  {
+    "method": "GET",
+    "path": "/auth-files",
+    "body": "none",
+    "purpose": "List auth JSON token files."
+  },
+  {
+    "method": "GET",
+    "path": "/auth-files/download?name=<file.json>",
+    "body": "none",
+    "purpose": "Download an auth JSON token file."
+  },
+  {
+    "method": "POST",
+    "path": "/auth-files?name=<file.json>",
+    "body": "raw JSON or multipart file",
+    "purpose": "Upload an auth JSON token file."
+  },
+  {
+    "method": "DELETE",
+    "path": "/auth-files?name=<file.json>",
+    "body": "none",
+    "purpose": "Delete one auth JSON token file."
+  },
+  {
+    "method": "DELETE",
+    "path": "/auth-files?all=true",
+    "body": "none",
+    "purpose": "Delete all on-disk auth JSON token files."
+  },
+  {
+    "method": "POST",
+    "path": "/vertex/import",
+    "body": "multipart file + location",
+    "purpose": "Import Vertex service account JSON."
+  },
+  {
+    "method": "GET",
+    "path": "/anthropic-auth-url",
+    "body": "none",
+    "purpose": "Start Anthropic OAuth login."
+  },
+  {
+    "method": "GET",
+    "path": "/codex-auth-url",
+    "body": "none",
+    "purpose": "Start Codex OAuth login."
+  },
+  {
+    "method": "GET",
+    "path": "/gemini-cli-auth-url?project_id=<id>",
+    "body": "none",
+    "purpose": "Start Gemini CLI OAuth login."
+  },
+  {
+    "method": "GET",
+    "path": "/antigravity-auth-url",
+    "body": "none",
+    "purpose": "Start Antigravity OAuth login."
+  },
+  {
+    "method": "GET",
+    "path": "/get-auth-status?state=<state>",
+    "body": "none",
+    "purpose": "Poll OAuth login state."
+  }
+]
