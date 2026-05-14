@@ -1,0 +1,21 @@
+# 配置文件（包含密钥）
+config.yaml
+*.yaml.bak
+
+# 临时文件
+temp_payload.json
+*.tmp
+
+# 生成的图片
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 日志文件
+*.log
