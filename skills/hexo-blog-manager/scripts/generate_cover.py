@@ -36,14 +36,23 @@ def generate_cover(prompt, output_path, api_key=None, base_url=None, model=None,
     config = get_api_config()
     
     api_key = api_key or config.get("api_key", "")
-    base_url = base_url or config.get("base_url", "https://ducksaymay-lumina.hf.space")
-    model = model or config.get("model", "gpt-image-2")
-    size = size or config.get("size", "1792x1024")
+    base_url = base_url or config.get("base_url", "")
+    model = model or config.get("model", "")
+    size = size or config.get("size", "")
     
     if not api_key:
         print("Error: API key 未设置。请运行以下命令配置:")
         print("  python hexo_config.py set-api-key <your-api-key>")
         print("或编辑 ~/.config/hexo/config.yaml")
+        return False
+    if not base_url:
+        print("Error: image_api.base_url 未设置，请编辑 ~/.config/hexo/config.yaml")
+        return False
+    if not model:
+        print("Error: image_api.model 未设置，请编辑 ~/.config/hexo/config.yaml")
+        return False
+    if not size:
+        print("Error: image_api.size 未设置，请编辑 ~/.config/hexo/config.yaml")
         return False
     
     # 构建请求

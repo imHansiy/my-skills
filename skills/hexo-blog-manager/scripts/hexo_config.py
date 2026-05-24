@@ -15,10 +15,10 @@ CONFIG_FILE = CONFIG_DIR / "config.yaml"
 # 默认配置模板
 DEFAULT_CONFIG = {
     "image_api": {
-        "base_url": "https://ducksaymay-lumina.hf.space",
+        "base_url": "",
         "api_key": "",
-        "model": "gpt-image-2",
-        "size": "1792x1024",  # 16:9 比例，适合博客封面
+        "model": "",
+        "size": "",
         "default_prompt_style": "cinematic tech-futuristic style, vibrant lighting, 8k resolution"
     },
     "github": {
@@ -26,12 +26,20 @@ DEFAULT_CONFIG = {
         "use_gh_cli": True  # 是否使用 gh CLI 认证（优先级高于 token）
     },
     "github_oss": {
-        "repo": "imHansiy/GitHub_Oss",
-        "cdn_base": "https://jsdelivr.007666.xyz/gh/imHansiy/GitHub_Oss@main"
+        "repo": "",
+        "cdn_base": ""
     },
     "hexo_blog": {
-        "repo": "imHansiy/MyHexo",
+        "repo": "",
         "posts_path": "source/_posts"
+    },
+    "blog_content": {
+        "style_prompt": "",
+        "audience": "",
+        "tone": "",
+        "structure": [],
+        "language": "zh-CN",
+        "requirements": []
     }
 }
 
@@ -121,12 +129,26 @@ def check_config():
     config = load_config()
     api_config = config.get("image_api", {})
     github_config = config.get("github", {})
+    oss_config = config.get("github_oss", {})
+    hexo_config = config.get("hexo_blog", {})
     
     issues = []
     if not api_config.get("api_key"):
         issues.append("image_api.api_key 未设置")
     if not api_config.get("base_url"):
         issues.append("image_api.base_url 未设置")
+    if not api_config.get("model"):
+        issues.append("image_api.model 未设置")
+    if not api_config.get("size"):
+        issues.append("image_api.size 未设置")
+    if not oss_config.get("repo"):
+        issues.append("github_oss.repo 未设置")
+    if not oss_config.get("cdn_base"):
+        issues.append("github_oss.cdn_base 未设置")
+    if not hexo_config.get("repo"):
+        issues.append("hexo_blog.repo 未设置")
+    if not hexo_config.get("posts_path"):
+        issues.append("hexo_blog.posts_path 未设置")
     
     # 检查 GitHub 认证配置
     use_gh_cli = github_config.get("use_gh_cli", True)
@@ -191,7 +213,7 @@ if __name__ == "__main__":
         else:
             if save_config(DEFAULT_CONFIG):
                 print(f"默认配置已创建: {CONFIG_FILE}")
-                print("请编辑配置文件设置 api_key")
+                print("请编辑配置文件设置 image_api、github_oss 和 hexo_blog")
             else:
                 sys.exit(1)
     

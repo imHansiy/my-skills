@@ -60,11 +60,18 @@ def upload_to_oss(image_path, date_str, filename):
     """
     config = load_config()
     oss_config = config.get("github_oss", {})
-    repo = oss_config.get("repo", "imHansiy/GitHub_Oss")
-    cdn_base = oss_config.get("cdn_base", "https://jsdelivr.007666.xyz/gh/imHansiy/GitHub_Oss@main")
+    repo = oss_config.get("repo", "")
+    cdn_base = oss_config.get("cdn_base", "")
     github_config = get_github_config()
     use_gh_cli = github_config.get("use_gh_cli", True)
     github_token = github_config.get("token", "")
+
+    if not repo:
+        print("[ERROR] github_oss.repo 未设置")
+        return None
+    if not cdn_base:
+        print("[ERROR] github_oss.cdn_base 未设置")
+        return None
     
     # 构建远程路径
     remote_path = f"img/{date_str}/{filename}"
@@ -144,11 +151,7 @@ def create_markdown(title, tags=None, category=None, banner_url=None, output_dir
     
     # 确定输出目录
     if output_dir is None:
-        config = load_config()
-        hexo_config = config.get("hexo_blog", {})
-        repo = hexo_config.get("repo", "imHansiy/MyHexo")
-        posts_path = hexo_config.get("posts_path", "source/_posts")
-        # 默认在当前目录创建，后续需要手动移动到 Hexo 仓库
+        # 默认只创建本地草稿；发布时使用配置和 gh api 更新线上仓库
         output_dir = "."
     
     filepath = os.path.join(output_dir, filename)
@@ -209,14 +212,22 @@ def commit_to_github(filepath, title):
     """
     config = load_config()
     hexo_config = config.get("hexo_blog", {})
-    repo = hexo_config.get("repo", "imHansiy/MyHexo")
+    repo = hexo_config.get("repo", "")
     posts_path = hexo_config.get("posts_path", "source/_posts")
+    local_repo_path = hexo_config.get("local_repo_path", "")
     github_config = get_github_config()
     use_gh_cli = github_config.get("use_gh_cli", True)
     github_token = github_config.get("token", "")
     
-    # 复制文件到 Hexo 仓库
-    hexo_repo_path = os.path.expanduser(f"~/MyHexo")  # 假设仓库在用户目录
+    if not repo:
+        print("[ERROR] hexo_blog.repo 未设置")
+        return False
+    if not local_repo_path:
+        print("[ERROR] hexo_blog.local_repo_path 未设置；请使用 gh api 线上更新，或显式配置本地仓库路径")
+        return False
+
+    # 复制文件到显式配置的 Hexo 仓库
+    hexo_repo_path = os.path.expanduser(local_repo_path)
     if not os.path.exists(hexo_repo_path):
         print(f"[WARN] Hexo 仓库路径不存在: {hexo_repo_path}")
         print(f"请手动将 {filepath} 移动到 Hexo 仓库的 {posts_path} 目录")
@@ -342,7 +353,7 @@ def create_blog(title, tags=None, category=None, skip_cover=False, skip_upload=F
         commit_to_github(filepath, title)
     else:
         print("\n[Step 5/5] 跳过自动提交")
-        print(f"[TIP] 请手动将 {filepath} 移动到 Hexo 仓库并提交")
+        print(f"[TIP] 请使用 gh api 将 {filepath} 上传到配置的 Hexo 仓库")
     
     # 完成
     print("\n" + "=" * 60)
@@ -353,8 +364,8 @@ def create_blog(title, tags=None, category=None, skip_cover=False, skip_upload=F
         print(f"[COVER] 封面: {banner_url}")
     print(f"\n[NEXT] 下一步:")
     print(f"   1. 编辑 {filepath} 撰写内容")
-    print(f"   2. 移动到 Hexo 仓库的 source/_posts/ 目录")
-    print(f"   3. 运行 'hexo generate && hexo deploy' 发布")
+    print(f"   2. 使用 gh api 上传到配置的 Hexo 仓库")
+    print(f"   3. 由配置的部署流程发布")
     
     return True
 
