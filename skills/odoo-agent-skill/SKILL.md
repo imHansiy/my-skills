@@ -1,25 +1,29 @@
 ---
-name: odoorpc-agent-skill
+name: odoo-agent-skill
 description: >-
-  Use proactively for Odoo work. Connect AI coding agents to Odoo through
-  Python OdooRPC profiles, inspect live records, troubleshoot models, fields,
-  access rights, modules, companies, connectors, imports, synchronization
-  issues, odoo.conf, addons paths, backup restore, filestore checks, and
-  guarded create/update/delete workflows.
+  Use proactively for Odoo implementation, troubleshooting, validation, and
+  customer delivery work. Inspect live records through configured Odoo profiles,
+  verify browser workflows and actual UI labels, read local source/configuration,
+  prepare reproducible customer demo or recording scripts, troubleshoot models,
+  fields, access rights, modules, companies, connectors, imports, inventory,
+  costing, sales, purchasing, odoo.conf, addons paths, backup restore, filestore
+  checks, and guarded create/update/delete workflows. OdooRPC is one available
+  access method, not the whole scope of the skill.
 license: MIT
-compatibility: Requires Python 3.10+, network access to the target Odoo server, and either uv or a Python environment with odoorpc and PyYAML installed. Designed for Agent Skills-compatible tools including Claude Code, OpenCode, Codex, Manus, and similar coding agents.
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
   author: "customized-for-siy-han"
 ---
 
-# OdooRPC Agent Skill
+# Odoo Agent Skill
 
-This skill gives an AI coding agent a safe, reusable workflow for connecting to Odoo with Python and OdooRPC.
+This skill gives an AI coding agent a safe, reusable workflow for real Odoo work: live data inspection, browser-verified workflows, local source/configuration analysis, customer demo scripts, and guarded data changes. Python OdooRPC profiles are one supported access method, not the skill's identity.
 
 It is intentionally **not tied to Claude Code**. Any agent that can read `SKILL.md` and run local scripts can use it: Claude Code, OpenCode, Codex, Manus, Cursor-like agents, local terminal agents, or other Agent Skills-compatible clients.
 
-The skill is meant to be used **actively**. If the user asks about Odoo records, Odoo fields, Odoo business documents, Odoo connector data, Odoo settings, Odoo errors, Odoo version differences, or Odoo database state, do not treat this as a generic explanation task only. First consider whether a configured Odoo profile can answer the question with real data.
+Requirements: Python 3.10+, network access to the target Odoo server when live inspection is needed, and either `uv` or a Python environment with `odoorpc` and `PyYAML` installed.
+
+The skill is meant to be used **actively**. If the user asks about Odoo records, Odoo fields, Odoo business documents, Odoo connector data, Odoo settings, Odoo errors, Odoo version differences, Odoo database state, customer demos, or recording scripts, do not treat this as a generic explanation task only. First consider whether configured Odoo profiles, the browser, local source files, and validation artifacts can answer the question with real evidence.
 
 ## Proactive invocation policy
 
@@ -34,7 +38,7 @@ Use this skill whenever the request is about Odoo and one of these is true:
 - The user is working on a connector, migration, data sync, import/export, automation, or integration that depends on Odoo records.
 - The user is doing **local Odoo development or operations**, including `odoo.conf` diagnosis, database selection, addons path detection, module documentation, module manifest work, Odoo.sh backup restore, filestore recovery, or admin/account repair.
 
-Do **not** wait for the user to explicitly say “use OdooRPC”. If an Odoo profile exists and the user asks a database-specific Odoo question, use read-only commands to inspect the live system before answering, unless the user explicitly says not to connect.
+Do **not** wait for the user to explicitly say “use RPC”, “use browser”, or “inspect the database”. If an Odoo profile exists and the user asks a database-specific Odoo question, use read-only commands to inspect the live system before answering, unless the user explicitly says not to connect. If the answer depends on UI behavior or a customer recording path, also verify actual menus, buttons, status labels, and outcomes through browser/source/view inspection.
 
 ## Common trigger words and entities
 
@@ -58,11 +62,12 @@ Treat these as strong signals to use or consider this skill:
 | “看一下 odoo.conf / 当前库 / addons 路径” | Inspect the active config file, distinguish active values from commented examples, and report database/addons/data_dir clearly. |
 | “重置 admin 登录密码” | First distinguish Odoo login password from `admin_passwd` and PostgreSQL password; prefer `odoo-bin shell` + ORM. |
 | “生成模块介绍页 / README 转 description” | Confirm the target is an Odoo module, inspect `__manifest__.py`, and create or update `static/description/index.html`. |
+| “写客户演示文档 / 录屏稿 / 操作手册 / 给客户讲解” | Verify real menus, records, fields, and workflow outcomes first. Produce a step-by-step video script that the user can follow on screen, with exact test records and explicit limits. |
 | “恢复 Odoo.sh 备份” | Identify backup type, confirm target database and filestore/data_dir, prefer safe restore paths, and warn about non-neutralized backups. |
 
 ## Core rule
 
-Use the bundled scripts first. Do not write ad-hoc OdooRPC code unless the scripts are insufficient.
+Use the bundled scripts first for Odoo profile, query, and guarded mutation work. Do not write ad-hoc OdooRPC code unless the scripts are insufficient.
 
 Preferred command style from the skill directory:
 
@@ -97,10 +102,10 @@ All examples in this skill use **bash** syntax. On Windows PowerShell, apply the
 2. **`--profile` goes BEFORE the subcommand**, not after:
    ```powershell
    # WRONG — PowerShell treats --profile as unrecognized
-   uv run scripts/odoo_query.py test --profile winston-test
+   uv run scripts/odoo_query.py test --profile <profile-name>
 
    # CORRECT
-   uv run scripts/odoo_query.py --profile winston-test test
+   uv run scripts/odoo_query.py --profile <profile-name> test
    ```
 
 3. **Multi-line backslash `\` does not work.** Use a single long line or PowerShell backtick `` ` `` for line continuation.
@@ -131,12 +136,12 @@ profiles:
     password: admin
     timeout: 30
     odoo_version: "19.0"
-  production:
-    host: odoo.example.com
+  remote:
+    host: <odoo-host>
     port: 443
     protocol: jsonrpc+ssl
-    database: prod_db
-    username: admin@example.com
+    database: <database-name>
+    username: <login-or-email>
     password: "paste-api-key-or-password-here"
     timeout: 30
     odoo_version: "19.0"
@@ -154,23 +159,23 @@ Use `scripts/odoo_config.py set-profile`; never manually echo secrets into shell
 
 ```bash
 printf '%s' 'SECRET_VALUE' | uv run scripts/odoo_config.py set-profile \
-  --profile customer-dev \
-  --host odoo.example.com \
+  --profile <profile-name> \
+  --host <odoo-host> \
   --port 443 \
   --protocol jsonrpc+ssl \
-  --database customer_db \
-  --username admin@example.com \
+  --database <database-name> \
+  --username <login-or-email> \
   --password-stdin \
   --odoo-version 19.0 \
   --set-default
 ```
 
-If the user provides multiple Odoo systems, ask or infer a clear profile name such as `local`, `dev`, `staging`, `production`, `customer-a-prod`, or `nordic-match-prod`. If the user does not provide a name, create a short descriptive one from the host and purpose.
+If the user provides multiple Odoo systems, ask or infer a clear profile name such as `<customer>-local`, `<customer>-dev`, `<customer>-staging`, or `<customer>-production`. If the user does not provide a name, create a short descriptive one from the host and purpose.
 
 If the user did not provide the Odoo version, detect and save it after the profile is created:
 
 ```bash
-uv run scripts/odoo_config.py detect-version --profile customer-dev --save
+uv run scripts/odoo_config.py detect-version --profile <profile-name> --save
 ```
 
 The config script sets restrictive permissions where supported:
@@ -180,7 +185,7 @@ The config script sets restrictive permissions where supported:
 
 ## Odoo.sh / Odoo Online database name detection
 
-Odoo.sh and Odoo Online instances use **auto-generated database names** that do NOT match the subdomain. For example, `calipokehouse-test.odoo.com` might have database `shanghaimeowai-winston1-dev-31537573`.
+Odoo.sh and Odoo Online instances can use **auto-generated database names** that do NOT match the subdomain. For example, `<customer>-test.odoo.com` might have a database named like `<organization>-<project>-<branch>-<random-id>`.
 
 **Do not guess the database name.** Instead, query the `/web/database/list` endpoint:
 
@@ -192,7 +197,7 @@ r = requests.post(
     timeout=15
 )
 print(r.json().get('result'))
-# Returns: ["shanghaimeowai-winston1-dev-31537573"]
+# Returns: ["<organization>-<project>-<branch>-<random-id>"]
 ```
 
 Or with `curl`:
@@ -207,17 +212,17 @@ Then use the returned database name in the profile:
 
 ```bash
 uv run scripts/odoo_config.py set-profile \
-  --profile winston-test \
-  --host calipokehouse-test.odoo.com \
+  --profile <profile-name> \
+  --host <odoo-host> \
   --port 443 \
   --protocol jsonrpc+ssl \
-  --database shanghaimeowai-winston1-dev-31537573 \
-  --username admin \
+  --database <database-name-returned-by-list-endpoint> \
+  --username <login-or-email> \
   --password 'actual-password' \
   --odoo-version 19.0
 ```
 
-**Typical Odoo.sh database name format:** `<org>-<project>-<branch>-<random_digits>`
+**Typical Odoo.sh database name format:** `<organization>-<project>-<branch>-<random-id>`
 
 If `/web/database/list` returns an empty list or is blocked, the instance may have `dbfilter` configured or `list_db = False`. In that case, ask the user for the database name directly.
 
@@ -273,6 +278,79 @@ uv run scripts/odoo_query.py --profile local search-read \
 Use JSON domains only. Do not use Python `eval` for domains.
 
 ## Practical Odoo playbooks
+
+### Customer demo and video-script documentation
+
+Apply this playbook when the user asks for a customer-facing demo script, recording script, reproduction guide, training guide, operation document, or any document the user will follow while recording a screen share for a customer.
+
+Core rule: **do not write from memory or assumptions when the database is reachable.** First inspect the live Odoo system, module source, actions/views, menus, records, and prior validation artifacts. The document must let the user reproduce the flow without guessing.
+
+Required verification before writing:
+
+1. Identify the active Odoo database and company context. If the browser URL is `localhost`, inspect the running `odoo.conf` and process when profiles do not match.
+2. Verify actual menu paths from `ir.actions.*`, XML views, browser UI, or source XML. Do not invent menu labels.
+3. Verify actual field labels, button labels, status values, and smart buttons from views or live records.
+4. Verify at least one concrete test record, product, order, lot, picking, listing, or session that the user can search for.
+5. Verify prerequisites and configuration: company, warehouse, product type, tracking, costing method, routes, BoM type, stock location, customer location, and installed custom modules where relevant.
+6. Verify the outcome by reading Odoo records after the workflow, or by a transaction-contained simulation followed by rollback when a state-changing check is needed.
+7. If screenshots are referenced, use only screenshots that actually exist or were actually captured for this workflow. Never use placeholder images, fake screenshot paths, or unrelated screenshots.
+
+Writing requirements:
+
+- Use English Odoo UI labels first, then Chinese in parentheses: `Inventory（库存）`, `Live Sessions（直播场次）`, `Outbound Done（出库完成）`.
+- Put the exact click path before the explanation, e.g. `Inventory（库存） > Reporting（报表） > Stock（库存）`.
+- Name the exact test data to use. Include searchable product/order/session names, IDs, quantities, costs, lots, and current states.
+- Tell the user which data **not** to use when it would conflict with previous tests, sold/outbound states, wrong companies, wrong warehouses, or duplicate unique fields.
+- Keep the playbook customer-agnostic. Do not hardcode one customer's company names, products, sessions, warehouses, screenshots, or module-specific examples into reusable instructions. Customer-specific values belong only in the document generated for that customer's current database after verification.
+- Explain setup steps that are not Odoo out-of-the-box. If a flow depends on a custom module, say so clearly and name the module.
+- Separate "verified works", "partially works", "not currently implemented", and "requires customization". Do not soften a gap into a working feature.
+- State business meaning and Odoo meaning separately when they differ, e.g. a live `Outbound Done` status may not mean a standard Odoo `Delivery Order` was created.
+- Include common failure causes and how to fix them, based on actual inspected data.
+- Avoid vague phrases such as "select a product" when a specific demo product is needed. Say exactly which product to search and why it is safe to use.
+- For exports/reports, explain what each shown column means and why the screenshot/report proves the requested result.
+- For procurement/costing demos, explain which configuration makes the result automatic rather than manually filled.
+
+Recommended document structure:
+
+```text
+# <Customer Demo Topic> Video Script
+
+## 1. Scope and boundary
+What this flow proves, what it does not prove, and whether it is native Odoo or custom.
+
+## 2. Preconditions
+Company, warehouse, product/category settings, routes, tracking, costing method, installed module, and safe test data.
+
+## 3. Exact test data
+Concrete records to search and use. Include current quantities/statuses. Include records to avoid.
+
+## 4. Recording steps
+Step-by-step click path with English labels and Chinese parentheses.
+
+## 5. What to say while recording
+Short narration that explains business value without inventing functionality.
+
+## 6. Verification
+Where to confirm the result in Odoo and what values should be visible.
+
+## 7. Known limits and customer Q&A
+Partial success, missing automation, customization needed, and likely customer questions.
+```
+
+Examples of high-signal wording:
+
+- "Use `<verified product name>`; it has `<verified available quantity>` in `<verified stock location>` and `<verified workflow state>`, so it is safe for a new demo."
+- "Do not reuse `<previous test product/order/session>`; it already reached `<blocking state>` in `<previous workflow record>` and may conflict with the current demo."
+- "`<business status label>` in this custom flow means `<verified business meaning>`. It does not automatically create/update `<standard Odoo record>` unless that integration is implemented and verified."
+- "`<exact warning message>` means `<verified root cause in this database>`. Fix it by `<verified action>`, such as switching to the correct company, selecting a valid warehouse, or creating the missing configuration deliberately."
+
+Things the agent must not do:
+
+- Do not generate customer demo documents with fake screenshots, fake paths, fake fields, or guessed buttons.
+- Do not write "native Odoo supports this" unless the actual native configuration and workflow were verified or sourced.
+- Do not stop at a high-level explanation when the user asked for a recording script. The output must contain clickable paths, exact values, and recording order.
+- Do not claim a flow deducts stock, creates a delivery, calculates cost, creates lots, or exports values until the corresponding Odoo records prove it.
+- Do not hide limitations. If only status flow works but no inventory move is created, say exactly that.
 
 ### Partner/customer/vendor lookup
 
@@ -341,7 +419,7 @@ Use `res.company` and `res.partner`. For a company record, inspect `name`, `pare
 ```bash
 uv run scripts/odoo_query.py --profile local search-read \
   --model res.company \
-  --domain-json '[["name", "ilike", "Schaeffler"]]' \
+  --domain-json '[["name", "ilike", "<company-name>"]]' \
   --fields name,parent_id,partner_id,country_id,company_registry,vat \
   --limit 10
 ```
@@ -359,7 +437,7 @@ Default behavior is dry-run:
 ```bash
 uv run scripts/odoo_mutate.py --profile local create \
   --model res.partner \
-  --values-json '{"name":"Demo Customer","email":"demo@example.com"}'
+  --values-json '{"name":"<partner-name>","email":"<email@example.com>"}'
 ```
 
 Actual creation requires `--execute` and a confirmation phrase:
@@ -367,7 +445,7 @@ Actual creation requires `--execute` and a confirmation phrase:
 ```bash
 uv run scripts/odoo_mutate.py --profile local create \
   --model res.partner \
-  --values-json '{"name":"Demo Customer","email":"demo@example.com"}' \
+  --values-json '{"name":"<partner-name>","email":"<email@example.com>"}' \
   --execute \
   --confirm CREATE
 ```
@@ -450,7 +528,7 @@ uv run scripts/odoo_mutate.py --profile local delete \
 
 ## Local Odoo development and operations playbooks
 
-Use these playbooks when the task is about a local/self-hosted Odoo deployment, module source tree, database restore, or server configuration rather than only live RPC record lookup.
+Use these playbooks when the task is about a local/self-hosted Odoo deployment, module source tree, database restore, or server configuration rather than only live record lookup.
 
 ### Global local-ops rules
 
