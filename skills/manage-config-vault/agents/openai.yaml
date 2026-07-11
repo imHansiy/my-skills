@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage Config Vault"
+  short_description: "Remember and manage encrypted config vaults"
+  default_prompt: "Use $manage-config-vault to load saved vault defaults and safely manage encrypted configuration items."
