@@ -1,21 +1,21 @@
 ---
 name: colab-cli
 description: >-
-  Operate Google Colab via the official `colab` CLI (google-colab-cli). Use when
+  Operate Google Colab via the real `colab` CLI (google-colab-cli). Use when
   asked to create/manage Colab sessions, run Python on remote Colab CPU/GPU/TPU
   VMs, sync files, install packages on the VM, export session history, or use
-  `colab run` / `colab exec` / `colab new` / `colab stop`. Prefer this skill over
-  outdated third-party Colab skill docs that invent commands like `colab start`
-  or `colab shell`.
+  `colab run` / `colab exec` / `colab new` / `colab stop` / `colab sessions`.
+  Prefer this over outdated docs that invent `colab start`, `colab shell`,
+  `colab list`, or `colab init`.
 license: MIT
 compatibility: >-
-  Requires `colab` on PATH (google-colab-cli). Official PyPI package is Linux/macOS
-  only; on Windows use the community windows-support install. Auth via oauth2
-  token at ~/.config/colab-cli/token.json or gcloud ADC. Network access to Google
-  Colab APIs required. Billable compute units may be consumed.
+  Requires `colab` on PATH. Official PyPI builds target Linux/macOS; on Windows
+  install the community windows-support fork or hit termios import crash.
+  Auth: this CLI defaults to oauth2 (token at ~/.config/colab-cli/token.json);
+  adc also supported via --auth adc. Network + possible Colab compute unit cost.
 metadata:
   author: imHansiy
-  version: "0.2.0"
+  version: "0.2.1"
   cli: google-colab-cli
   verified_cli_version: "0.6.1.dev3+g354692959 (itzrnvr windows-support)"
   platforms: "linux, macos, windows-with-fork"
@@ -23,117 +23,145 @@ metadata:
 
 # Colab CLI Operator
 
-Operate Google Colab environments with the real `colab` CLI commands only.
+Use **only** commands that exist in live `colab --help`. When unsure, run
+`colab <cmd> --help` or `colab skill` (bundled official operator text).
 
 ## When to Apply
 
 - Create / list / stop Colab sessions
 - Run local `.py` / `.ipynb` / piped code on a remote Colab VM
 - GPU/TPU one-shot jobs (`colab run`)
-- Upload/download files, install packages on the VM
-- Export session history as notebook/markdown/jsonl
+- Upload / download / install packages
+- Export session history (`.ipynb` / `.md` / `.txt` / `.jsonl`)
 - User mentions Colab CLI, remote Colab VM, `colab new`, `colab exec`
 
-## Do NOT invent these commands
-
-These appear in outdated third-party skills and **do not exist** in current CLI:
+## Forbidden / invented commands
 
 | Wrong | Correct |
 |-------|---------|
-| `colab init` | first-run OAuth / existing token / `gcloud auth application-default login` |
+| `colab init` | first login via oauth2 paste-code, or `gcloud auth application-default login` for adc |
 | `colab start` | `colab new -s <name>` |
-| `colab shell "..."` | `echo "..." \| colab console -s <name>` or prefer `colab exec` |
+| `colab shell "..."` | `echo "..." \| colab console -s <name>` (prefer `colab exec`) |
 | `colab list` | `colab sessions` |
-| `colab stop <id>` | `colab stop -s <name>` |
+| `colab stop <id>` (positional) | `colab stop -s <name>` |
 
-Always verify with `colab --help` / `colab <cmd> --help` if unsure.
+## Environment (verified on this machine)
 
-## Environment notes (this skill's target setup)
+| Item | Value |
+|------|--------|
+| OS | Windows cloud desktop (no WSL/Docker required once CLI works) |
+| CLI install | `uv tool install "git+https://github.com/itzrnvr/google-colab-cli.git@windows-support" --force` |
+| Verified version | `0.6.1.dev3+g354692959` |
+| Auth default | **`oauth2`** (live help: `[default: oauth2]`) |
+| Token path | `~/.config/colab-cli/token.json` |
+| OAuth client default | `~/.colab-cli-oauth-config.json` (bundled client works if file missing) |
 
-This skill is maintained for a **Windows cloud desktop** that already runs:
+### Windows termios crash
 
-- CLI: community Windows fork (official main crashes on `import termios`)
-- Install command used successfully:
-
-```powershell
-uv tool install "git+https://github.com/itzrnvr/google-colab-cli.git@windows-support" --force
+```text
+ModuleNotFoundError: No module named 'termios'
 ```
 
-- Auth: **oauth2** with token at `~/.config/colab-cli/token.json` (already authorized)
-- No WSL / Docker / gcloud required once oauth2 token exists
-- Official PyPI `google-colab-cli` works on Linux/macOS:
+Means official PyPI build on Windows. Reinstall the windows-support fork above.
+
+### Linux / macOS official install
 
 ```bash
 uv tool install google-colab-cli
-# or
-pip install google-colab-cli
+# or: pip install google-colab-cli
 ```
 
-### Windows termios crash (diagnosis)
+## Auth (critical)
 
-If `colab --help` fails with `ModuleNotFoundError: No module named 'termios'`, you are on official PyPI under Windows. Reinstall the windows-support fork above.
+Global flags **must come before** the subcommand:
 
-### Auth modes
+```powershell
+colab --auth oauth2 sessions
+colab --auth adc new -s demo
+```
 
 | Mode | When | Notes |
 |------|------|-------|
-| oauth2 (default in this environment) | token.json present | Interactive browser paste-code only on first login |
-| adc | gcloud installed | Prefer for headless multi-machine agents |
+| `oauth2` | default on this install | Browser copy-paste code on first use; caches `token.json` |
+| `adc` | gcloud / service account available | For headless multi-host agents |
 
-Global flag must be **before** subcommand:
+**CLI auth ≠ `colab auth`.**  
+`colab auth -s <name>` injects **VM-side** GCP credentials for BigQuery/GCS and is interactive. Never use it to fix CLI 401/403.
 
-```text
-colab --auth=oauth2 sessions
-colab --auth=adc new -s demo
+Debug identity (hidden command, but real):
+
+```powershell
+colab whoami
 ```
 
-**Do not** run `colab auth` to fix CLI 401/403. That command injects **VM-side** GCP creds for BigQuery/GCS, not CLI login.
+Shows provider, email, expiry, scopes. Need `colaboratory` + `userinfo.email` among others.
 
 ## Mental model
 
 1. **Session = billable VM + persistent Jupyter kernel.**
-2. Kernel state **survives** across `colab exec` in the same session (imports/variables stay).
-3. Default remote cwd is `/content`. Prefer absolute `/content/...` paths.
-4. Each `colab` invocation is fire-and-forget; keep-alive is a background daemon from `colab new`.
-5. **Always `colab stop -s <name>` when done** or use `colab run` (auto-stop unless `--keep`).
+2. Kernel state **survives** across `colab exec` / `colab repl` on the same session.
+3. Exec/repl/run `cd` to **`/content`** first. Prefer absolute `/content/...` paths.
+4. `colab ls` default path is **`content`** (not `/content`); `/content/...` also works.
+5. Each invocation is fire-and-forget; keep-alive daemon is started by `colab new`.
+6. Always **`colab stop -s <name>`** when done, or use `colab run` (auto-stop unless `--keep`).
 
-## Agent-safe command rules
+## Agent-safe commands
 
-### Allowed non-interactive patterns
+### Preferred non-interactive set
 
 ```powershell
 colab sessions
+colab whoami
 colab new -s <name>
 colab new -s <name> --gpu T4
 colab status -s <name>
 colab exec -s <name> -f script.py
+colab exec -s <name> -f script.py --timeout 600
 echo "print(1)" | colab exec -s <name>
 colab run script.py
-colab run --gpu T4 train.py
+colab run --gpu T4 --timeout 600 train.py
+colab run --keep -s keep1 train.py
 colab install -s <name> numpy pandas
+colab install -s <name> -r requirements.txt
+colab ls -s <name>
+colab ls -s <name> /content
 colab upload -s <name> local.py /content/local.py
 colab download -s <name> /content/out.bin .\out.bin
+colab rm -s <name> /content/tmp.txt
 colab log -s <name> -n 20
+colab log -s <name> -t execution -n 50
 colab log -s <name> -o summary.ipynb
+colab url -s <name>
+colab restart-kernel -s <name>
 colab stop -s <name>
 colab version
 colab skill
+colab readme
+colab help
+colab help exec
 ```
 
-### Never run interactively from an agent (will hang)
+### Never hang the agent
 
-- `colab repl` (TTY)
-- `colab console` without piped stdin
-- `colab auth` (human TTY)
-- `colab drivemount` (human TTY)
+| Command | Why | Agent alternative |
+|---------|-----|-------------------|
+| `colab repl` | TTY REPL | `colab exec -f` / piped `exec` |
+| `colab console` (no pipe) | interactive TTY | `echo cmd \| colab console -s NAME` |
+| `colab auth` | human TTY on VM | ask user to run it |
+| `colab drivemount` | human TTY | ask user to run it |
+| `colab edit` | opens `$EDITOR` | `download` → edit local → `upload` |
+| `colab pay` | opens browser | only if user asks |
+| `colab update --install` | **Linux only** per help | Windows: reinstall via `uv tool install ...` |
 
-Piped-only alternatives:
+Piped shell (noisy tmux bytes possible):
 
 ```powershell
-# batch shell (noisy tmux control bytes possible)
 echo "ls -la /content" | colab console -s <name>
+```
 
-# prefer Python via exec
+Prefer:
+
+```powershell
 echo "import os; print(os.listdir('/content'))" | colab exec -s <name>
 ```
 
@@ -143,11 +171,29 @@ echo "import os; print(os.listdir('/content'))" | colab exec -s <name>
 colab new -s job1
 ```
 
-Unnamed sessions become random 6-hex IDs and are harder to target.
+Unnamed names become random 6-hex IDs.
+
+## Timeouts (easy to get wrong)
+
+Live defaults:
+
+| Command | Flag | Default |
+|---------|------|---------|
+| `colab exec` | `--timeout` | **30.0** seconds |
+| `colab run` | `--timeout` | **30.0** seconds |
+
+Long training / installs in-script will die at 30s unless raised:
+
+```powershell
+colab exec -s train -f train.py --timeout 3600
+colab run --gpu T4 --timeout 3600 train.py
+```
+
+Package install uses `colab install` (separate from exec timeout).
 
 ## Standard workflows
 
-### A. Hello World smoke test
+### A. Hello World
 
 ```powershell
 colab new -s hello
@@ -155,48 +201,52 @@ echo "print('Hello from Google Colab!')" | colab exec -s hello
 colab stop -s hello
 ```
 
-### B. Run local script on existing session
+### B. Script + download artifacts
 
 ```powershell
 colab new -s train
 colab install -s train torch
-colab exec -s train -f train.py
+colab exec -s train -f train.py --timeout 3600
 colab download -s train /content/checkpoints/model.bin .\model.bin
 colab stop -s train
 ```
 
-### C. Ephemeral one-shot (preferred for short jobs)
+### C. Ephemeral one-shot
 
 ```powershell
-colab run --gpu T4 train.py --epochs 1
-# auto: new + exec + stop (unless --keep)
+colab run --gpu T4 --timeout 3600 train.py --epochs 1
+# new + exec + stop (unless --keep)
+# args after the script path go to sys.argv
 ```
 
 ### D. Notebook
 
 ```powershell
 colab new -s nb
-colab exec -s nb -f report.ipynb
+colab exec -s nb -f report.ipynb --timeout 1800
 # writes report_output.ipynb next to input
 colab stop -s nb
 ```
 
-### E. Accelerator notes
+### E. Accelerators
 
-Supported GPU: `T4`, `L4`, `G4`, `H100`, `A100`  
-Supported TPU: `v5e1`, `v6e1`
+| Flag | Values |
+|------|--------|
+| `--gpu` | `T4`, `L4`, `G4`, `H100`, `A100` |
+| `--tpu` | `v5e1`, `v6e1` |
 
-- Unknown `--gpu` may silently fall back toward A100 → then fail.
-- Free / low tiers often only get CPU. On 400 / 412 / capacity errors, fall back to CPU or T4.
-- Do not assume GPU/TPU allocation succeeds.
+- Omit both → CPU.
+- Unknown `--gpu` may silently fall toward **A100** then fail.
+- Tier/capacity errors (400/412) → fall back to CPU or T4.
+- Never assume free-tier GPU works.
 
 ## Safety
 
-1. **Stop sessions** when finished. Idle VMs burn compute units.
+1. Stop sessions when finished; idle VMs burn compute units.
 2. Prefer `colab run` for short jobs (self-cleanup).
-3. Do not print full OAuth tokens / refresh tokens.
-4. Local state: `~/.config/colab-cli/sessions.json`, `token.json`, `settings.json`. Do not hand-edit.
-5. Isolate agent runs with `--config` if needed:
+3. Never print full OAuth / refresh tokens from `token.json`.
+4. State files: `~/.config/colab-cli/sessions.json`, `token.json`, `settings.json`, `history/*.jsonl` — do not hand-edit.
+5. Isolate agent runs:
 
 ```powershell
 colab --config $env:TEMP\colab-agent.json new -s agent1
@@ -206,33 +256,41 @@ colab --config $env:TEMP\colab-agent.json new -s agent1
 
 | Symptom | Action |
 |---------|--------|
-| `No module named 'termios'` on Windows | Reinstall windows-support fork |
-| `Invalid code verifier` during oauth | Re-generate auth URL + fresh code (PKCE one-shot) |
-| Session not found / 404 / 401 on exec | `colab sessions` then `colab new` |
-| Wedged kernel | `colab restart-kernel -s <name>` or stop+new |
-| keep-alive 403 / consecutive_4xx | Re-auth with correct scopes (`colaboratory` required) |
-| GPU 400/412 | Use CPU or lower GPU; check account tier |
+| `No module named 'termios'` | Reinstall windows-support fork |
+| `Invalid code verifier` | New auth URL + fresh code only (PKCE) |
+| Session not found / 404 / 401 on exec | `colab sessions` → `colab new` |
+| Wedged kernel | `colab restart-kernel -s NAME` or stop+new |
+| keep-alive 403 / consecutive_4xx | Fix scopes (`colab whoami`); re-auth |
+| GPU 400/412 | CPU or lower GPU; check tier |
+| Exec/run dies ~30s | Raise `--timeout` |
+| `update --install` on Windows | Unsupported; use `uv tool install ... --force` |
 
 ## Quick command map
 
 | Goal | Command |
 |------|---------|
+| Who am I | `colab whoami` |
 | List sessions | `colab sessions` |
 | Create CPU | `colab new -s NAME` |
 | Create GPU | `colab new -s NAME --gpu T4` |
-| Exec file | `colab exec -s NAME -f script.py` |
+| Status | `colab status -s NAME` |
+| Exec file | `colab exec -s NAME -f script.py [--timeout SEC]` |
 | Exec stdin | `echo code \| colab exec -s NAME` |
-| One-shot | `colab run [--gpu T4] script.py` |
-| Install pkgs | `colab install -s NAME pkg1 pkg2` |
-| Upload | `colab upload -s NAME local remote` |
-| Download | `colab download -s NAME remote local` |
-| Export log | `colab log -s NAME -o out.ipynb` |
+| One-shot | `colab run [--gpu T4] [--timeout SEC] script.py [args...]` |
+| Install | `colab install -s NAME pkg...` / `-r requirements.txt` |
+| List files | `colab ls -s NAME [PATH]` |
+| Upload | `colab upload -s NAME LOCAL REMOTE` |
+| Download | `colab download -s NAME REMOTE LOCAL` |
+| Remove remote | `colab rm -s NAME PATH` |
+| Log / export | `colab log -s NAME [-n N] [-t TYPE] [-o FILE]` |
+| Browser URL | `colab url -s NAME [--host URL] [--open]` |
+| Restart kernel | `colab restart-kernel -s NAME` |
 | Stop | `colab stop -s NAME` |
-| Built-in official skill text | `colab skill` |
+| Official skill dump | `colab skill` |
 
 ## More detail
 
-- Full command reference: `references/commands.md`
-- OpenAI agent metadata: `agents/openai.yaml`
+- Full reference: `references/commands.md`
+- Agent metadata: `agents/openai.yaml`
 
-When this skill conflicts with memory, **trust live `colab --help` and `colab skill` output**.
+If this skill conflicts with live CLI output, **trust `colab --help` / `colab <cmd> --help`**.
