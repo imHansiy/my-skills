@@ -1,0 +1,4 @@
+interface:
+  display_name: "Colab CLI"
+  short_description: "Manage Google Colab sessions and run code on remote VMs"
+  default_prompt: "Use the colab-cli skill with real google-colab-cli commands to provision a session, run the requested code, and stop the session when done."
