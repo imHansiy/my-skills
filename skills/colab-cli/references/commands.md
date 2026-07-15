@@ -1,13 +1,12 @@
-# Colab CLI command reference
+# Colab CLI command reference (full audit)
 
-Verified against installed CLI:
+Verified against installed binary **0.6.1.dev3+g354692959** (itzrnvr windows-support) by:
 
-```text
-colab version → 0.6.1.dev3+g354692959
-default --auth → oauth2
-```
+- `colab --help` and every subcommand `--help`
+- Source defaults in `colab_cli/*.py` / `commands/*.py`
+- Runtime checks: auth default, timeouts, accelerator fallbacks, self-install platform gate
 
-Always re-check with `colab <cmd> --help` if behavior looks off.
+Re-run live help if your version differs.
 
 ## Global options
 
@@ -15,159 +14,189 @@ Always re-check with `colab <cmd> --help` if behavior looks off.
 colab [GLOBAL OPTIONS] <command> [ARGS]
 ```
 
-| Flag | Meaning | Notes |
+| Flag | Default | Notes |
 |------|---------|-------|
-| `--auth oauth2\|adc` | Auth strategy | **Default: `oauth2`** on this install (not adc) |
-| `-c, --client-oauth-config PATH` | OAuth client JSON | Default `~/.colab-cli-oauth-config.json` |
-| `--config PATH` | Session state file | Default `~/.config/colab-cli/sessions.json` |
-| `--logtostderr` | Debug to stderr | |
-| `--install-completion` / `--show-completion` | Shell completion | |
-| `-h, --help` | Help | |
-
-Examples:
+| `--auth oauth2\|adc` | **`oauth2`** | Case-insensitive |
+| `-c, --client-oauth-config PATH` | `~/.colab-cli-oauth-config.json` | Bundled client used if file missing |
+| `--config PATH` | `~/.config/colab-cli/sessions.json` (when omitted) | Scratch isolation for agents |
+| `--logtostderr` | off | |
+| `--install-completion` / `--show-completion` | — | Shell completion helpers |
+| `-h, --help` | — | |
 
 ```powershell
 colab --auth oauth2 sessions
 colab --auth adc --config $env:TEMP\agent.json new -s job
 ```
 
-## Hidden / debug
+## Visible commands (`colab --help`)
 
-| Command | Purpose |
-|---------|---------|
-| `colab whoami` | Print auth provider, email, expiry, scopes (hidden but callable) |
+`console` `download` `drivemount` `edit` `exec` `help` `install` `log` `ls` `new` `pay` `readme` `repl` `restart-kernel` `rm` `run` `sessions` `skill` `status` `stop` `update` `upload` `url` `version`
+
+## Hidden but callable
+
+| Command | Registration | Purpose |
+|---------|--------------|---------|
+| `colab whoami` | `hidden=True` | Auth provider, email, expiry, scopes |
+| `colab auth [-s NAME]` | `hidden=True` | VM-side `google.colab.auth.authenticate_user()` |
+
+Both still answer to `colab <cmd> --help`.
 
 ## Session management
 
-| Command | Purpose |
+### `colab new`
+
+```text
+colab new [-s NAME] [--gpu GPU] [--tpu TPU]
+```
+
+| Option | Behavior |
+|--------|----------|
+| `-s/--session` | Name; if omitted → `uuid4().hex[:6]` |
+| `--gpu` | `T4\|L4\|G4\|H100\|A100` (case-insensitive). **Unknown → A100** |
+| `--tpu` | `v5e1` → V5E1; **any other non-empty string → V6E1** |
+| neither | CPU |
+
+On accelerator **HTTP 400**, CLI prints quota/entitlement message and exits 1.  
+After assign, keep-alive is pre-flighted; **403 scope errors** unassign the VM and exit 1 with remediation.
+
+### Other session commands
+
+| Command | Options |
 |---------|---------|
-| `colab new -s NAME [--gpu GPU] [--tpu TPU]` | Create VM session |
-| `colab sessions` | List active sessions; prune stale local entries |
-| `colab status [-s NAME]` | Hardware / status |
-| `colab restart-kernel [-s NAME]` | Reset kernel; keep VM |
-| `colab stop [-s NAME]` | Terminate session + keep-alive |
-| `colab url [-s NAME] [--host URL] [--open]` | Browser attach URL for existing session |
+| `colab sessions` | none |
+| `colab status [-s NAME]` | optional session |
+| `colab restart-kernel [-s NAME]` | optional session |
+| `colab stop [-s NAME]` | optional session |
+| `colab url [-s NAME] [--host URL] [--open]` | host default `https://colab.research.google.com`; `--open` default false |
 
-### Accelerators
-
-| Flag | Values |
-|------|--------|
-| `--gpu` | `T4`, `L4`, `G4`, `H100`, `A100` |
-| `--tpu` | `v5e1`, `v6e1` |
-
-Omit both → CPU.
-
-### url options
-
-| Flag | Meaning |
-|------|---------|
-| `-s, --session` | Session name |
-| `--host` | Frontend origin (default `https://colab.research.google.com`) |
-| `--open` | Also open system browser (off by default so output stays pipeable) |
+`url` prints **only** the connect URL (pipe-friendly, no `[colab]` prefix on the URL line).
 
 ## Execution
 
-| Command | Purpose |
-|---------|---------|
-| `colab exec [-s NAME] [-f FILE] [--output-image PATH] [--timeout SEC]` | Run stdin / `.py` / `.ipynb` |
-| `colab run [--session NAME] [--gpu GPU] [--tpu TPU] [--keep] [--timeout SEC] SCRIPT [SCRIPT_ARGS...]` | Ephemeral new+exec+stop |
-| `colab repl [-s NAME] [--output-image PATH]` | Interactive REPL (**agent: avoid**) |
-| `colab console [-s NAME]` | Raw TTY; pipe stdin for batch (**agent: pipe only**) |
-
-### Timeout defaults (important)
-
-| Command | Option | Default |
-|---------|--------|---------|
-| `exec` | `--timeout` | **30.0** |
-| `run` | `--timeout` | **30.0** |
-
-Raise for long jobs:
-
-```powershell
-colab exec -s s1 -f train.py --timeout 3600
-colab run --gpu T4 --timeout 3600 train.py
-```
-
-### exec notes
-
-- Local `-f` files are read client-side and sent to the kernel (no prior upload required).
-- Kernel state persists across execs on the same session.
-- Working directory starts at `/content`.
-- Notebooks write `<basename>_output.ipynb` next to the input file.
-- PNG/JPEG can be captured with `--output-image PATH`.
-
-### run notes
+### `colab exec`
 
 ```text
-colab run [options] SCRIPT [SCRIPT_ARGS...]
+colab exec [-s NAME] [-f FILE] [--output-image PATH] [--timeout SEC]
 ```
 
-- SCRIPT is required; must exist **before** a VM is allocated.
-- Args after SCRIPT become `sys.argv[1:]`.
-- `--keep` leaves the session running (use `colab stop` later).
-- `-s/--session` names the ephemeral session (useful with `--keep`).
-- CLI chatter → **stderr**; script stdout stays on **stdout**.
-- Exit codes propagate from the script.
-- Shebang form is **Unix-oriented**:
+| Option | Default | Notes |
+|--------|---------|-------|
+| `-s/--session` | resolved unique/active | |
+| `-f/--file` | none | `.py` or `.ipynb` |
+| `--output-image` | none | save plots |
+| `--timeout` | **30.0** | wall clock for kernel execute |
 
-```bash
-#!/usr/bin/env -S colab run --gpu T4
+Input selection:
+
+1. If `-f` → file
+2. Else if stdin is **not** a TTY → read stdin
+3. Else → error *No input provided. Pipe code or provide a file.* exit 1
+
+Notebook: runs each code cell; writes `<stem>_output.ipynb` beside the input path.  
+Before user code: `os.chdir('/content')`.  
+Kernel state persists across execs on the same session.
+
+### `colab run`
+
+```text
+colab run [-s NAME] [--gpu GPU] [--tpu TPU] [--keep] [--timeout SEC] SCRIPT [SCRIPT_ARGS...]
 ```
 
-Not applicable as a shebang on Windows cmd/PowerShell.
+| Option / arg | Default | Notes |
+|--------------|---------|-------|
+| `SCRIPT` | required | must exist **before** VM allocation |
+| `SCRIPT_ARGS` | — | become `sys.argv[1:]` |
+| `-s/--session` | auto name | useful with `--keep` |
+| `--gpu` / `--tpu` | same mapping as `new` | unknown GPU→A100, unknown TPU→V6E1 |
+| `--keep` | false | leave session running |
+| `--timeout` | **30.0** | execution timeout |
+
+Semantics: sets `sys.argv`, `__name__='__main__'`, strips shebang, filters IPython exit warning.  
+CLI chatter → **stderr**; script stdout → **stdout**.  
+Exit codes: SystemExit mapped like CPython; other errors → 1.  
+Shebang `#!/usr/bin/env -S colab run ...` is **Unix-oriented** (not Windows cmd/PowerShell).
+
+### `colab repl` / `colab console`
+
+| Command | Options | Agent |
+|---------|---------|-------|
+| `repl` | `-s`, `--output-image` | avoid (TTY) |
+| `console` | `-s` | pipe only |
 
 ## Files
 
-| Command | Purpose |
-|---------|---------|
-| `colab ls [-s NAME] [PATH]` | List remote files |
-| `colab upload [-s NAME] LOCAL_PATH REMOTE_PATH` | Upload |
-| `colab download [-s NAME] REMOTE_PATH LOCAL_PATH` | Download |
-| `colab rm [-s NAME] PATH` | Delete remote file |
-| `colab edit [-s NAME] REMOTE_PATH` | Edit via local `$EDITOR` (**agent: avoid**) |
+| Command | Signature | Defaults / notes |
+|---------|-----------|------------------|
+| `ls` | `[-s NAME] [PATH]` | PATH default **`content`** |
+| `upload` | `[-s NAME] LOCAL_PATH REMOTE_PATH` | local then remote |
+| `download` | `[-s NAME] REMOTE_PATH LOCAL_PATH` | remote then local |
+| `rm` | `[-s NAME] PATH` | required path |
+| `edit` | `[-s NAME] REMOTE_PATH` | uses `$EDITOR`; agent avoid |
 
-Notes:
-
-- `ls` default path is **`content`** (help default), not `/content`.
-- Absolute `/content/...` paths work for ls/upload/download/rm.
-- Argument order matters: upload is **local then remote**; download is **remote then local**.
+Absolute `/content/...` works. Relative paths are relative to VM contents API roots.
 
 ## Automation / utilities
 
-| Command | Purpose |
-|---------|---------|
-| `colab install [-s NAME] [PACKAGES...]` | Install via `uv pip install --system`, fallback `pip` |
-| `colab install [-s NAME] -r FILE` | From requirements file |
-| `colab auth [-s NAME]` | Authenticate Google **on the VM** (interactive) |
-| `colab drivemount [-s NAME] [PATH]` | Mount Drive (default `/content/drive`, interactive) |
-| `colab log [-s NAME] [-n LINES] [-t TYPE] [-o FILE]` | View/export history |
-| `colab pay` | Open subscription page in browser |
-| `colab version` | Print CLI version |
-| `colab update [--install]` | Check update; `--install` runs pip upgrade (**Linux only**) |
-| `colab skill` | Print bundled official SKILL.md |
-| `colab readme` | Print bundled README.md |
-| `colab help [COMMAND]` | Help listing / per-command help |
+### `colab install`
 
-### log options
+```text
+colab install [-s NAME] [-r REQUIREMENTS] [PACKAGES...]
+```
 
-| Flag | Meaning |
-|------|---------|
-| `-s, --session` | Session name (omit to list sessions that have logs) |
-| `-n, --lines` | Number of lines (default: all) |
-| `-t, --type` | Filter event type (e.g. `execution`, `file_operation`) |
-| `-o, --output` | Export path; suffix chooses format: `.ipynb`, `.md`, `.txt`, `.jsonl` |
+- Requires packages and/or `-r`.
+- `-r` file must exist **locally**; uploaded to `content/<basename>` then installed as `/content/<basename>`.
+- Remote: try `uv pip install --system ...`, else `python -m pip install ...`.
+- **No `--timeout` flag.** Kernel quiet default ~10s can surface `TimeoutError` on long installs.
+
+### `colab auth` (hidden)
+
+```text
+colab auth [-s NAME]
+```
+
+Runs VM `google.colab.auth.authenticate_user()` with **600s** interactive timeout. Not CLI login.
+
+### `colab drivemount`
+
+```text
+colab drivemount [-s NAME] [PATH]
+```
+
+PATH default **`/content/drive`**. Interactive Drive OAuth; **600s** budget; may print URL and wait for Enter.
+
+### `colab log`
+
+```text
+colab log [-s NAME] [-n LINES] [-t TYPE] [-o FILE]
+```
+
+| Flag | Default | Notes |
+|------|---------|-------|
+| `-s` | omit → list sessions with logs | |
+| `-n/--lines` | all | |
+| `-t/--type` | none | e.g. `execution`, `file_operation` |
+| `-o/--output` | none | suffix: `.ipynb` `.md` `.txt` `.jsonl` |
+
+### Other
+
+| Command | Notes |
+|---------|-------|
+| `pay` | opens `https://colab.research.google.com/signup` |
+| `version` | `Version: <pep440>` |
+| `update` | check PyPI |
+| `update --install` | **Linux + macOS only** (source). Help string says "Linux only"; Windows exits 1 with message mentioning Linux and macOS |
+| `skill` / `readme` | print bundled resources |
+| `help [COMMAND]` | root help or one command |
 
 ## Auth storage
 
 | Path | Content |
 |------|---------|
 | `~/.config/colab-cli/token.json` | oauth2 user token (**secret**) |
-| `~/.config/colab-cli/sessions.json` | local session metadata |
-| `~/.config/colab-cli/settings.json` | settings |
-| `~/.config/colab-cli/history/*.jsonl` | structured history |
+| `~/.config/colab-cli/sessions.json` | session metadata |
+| `~/.config/colab-cli/settings.json` | settings (incl. update check) |
+| `~/.config/colab-cli/history/*.jsonl` | history events |
 | `~/.colab-cli-oauth-config.json` | optional custom OAuth client |
-
-Do not commit or print secrets.
 
 ## Install recipes
 
@@ -180,35 +209,45 @@ colab whoami
 colab sessions
 ```
 
-Upstream Windows PR: https://github.com/googlecolab/google-colab-cli/pull/75
+PR: https://github.com/googlecolab/google-colab-cli/pull/75
 
 ### Linux / macOS
 
 ```bash
 uv tool install google-colab-cli
-# or: pip install google-colab-cli
 ```
 
 ### Self-update
 
 ```powershell
-# Check only (all platforms that can reach PyPI metadata)
-colab update
-
-# In-place pip upgrade — Linux only per CLI help
-colab update --install
+colab update                 # check (any platform that can reach PyPI)
+colab update --install       # Linux/macOS only
 ```
 
-On Windows, reinstall with `uv tool install ... --force` instead of `--install`.
+Windows: reinstall with `uv tool install ... --force` (do not expect `--install`).
+
+Note: upgrade recommendation for uv tools checks `"/uv/tools/"` in `sys.executable` (forward slashes). Windows paths use backslashes; self-install is already platform-gated off on Windows.
+
+## Accelerator fallback matrix (source)
+
+| Input | Result |
+|-------|--------|
+| no gpu/tpu | CPU |
+| `--gpu T4` (any case) | GPU T4 |
+| `--gpu nope` | GPU **A100** |
+| `--tpu v5e1` | TPU V5E1 |
+| `--tpu v6e1` / `foo` / `v5` | TPU **V6E1** |
 
 ## Agent anti-patterns
 
 1. Inventing `start` / `shell` / `list` / `init`
-2. Positional `colab stop <id>` instead of `-s`
-3. Leaving sessions running after the task
-4. Interactive `repl` / `console` / `auth` / `drivemount` / `edit` in agent loops
-5. Assuming default 30s timeout is enough for training
-6. Assuming free-tier GPU/TPU allocation
+2. Positional `colab stop <id>`
+3. Leaving sessions running
+4. Interactive `repl` / unpiped `console` / `auth` / `drivemount` / `edit`
+5. Relying on default 30s for training
+6. Assuming free-tier GPU/TPU
 7. Printing refresh tokens
-8. Using `colab auth` to fix CLI login errors
-9. Running `colab update --install` on Windows and expecting it to work
+8. Using `colab auth` to fix CLI login
+9. `colab update --install` on Windows
+10. `colab exec` on a TTY without `-f` or pipe
+11. Typos in `--gpu`/`--tpu` (silent wrong accelerator)

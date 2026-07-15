@@ -1,4 +1,4 @@
 interface:
   display_name: "Colab CLI"
-  short_description: "Manage Google Colab sessions and run code on remote VMs with real colab CLI syntax"
-  default_prompt: "Use the colab-cli skill. Prefer real commands only (new/sessions/exec/run/stop). Raise --timeout above 30s for long jobs, always name sessions with -s, and stop sessions when done."
+  short_description: "Audited real google-colab-cli syntax for remote Colab VMs"
+  default_prompt: "Use the colab-cli skill. Only real commands (new/sessions/exec/run/stop). Default auth is oauth2. Raise --timeout above 30s for long jobs. Unknown --gpu silently becomes A100; unknown --tpu becomes V6E1. Always -s name sessions and stop them when done."
