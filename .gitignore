@@ -13,3 +13,7 @@ pnpm-debug.log*
 .idea/
 .vscode/
 .ace-tool/
+
+# Python
+__pycache__/
+*.py[cod]

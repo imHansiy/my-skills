@@ -8,5 +8,4 @@
   - 重置 Odoo 登录用户 `admin` 密码
   - 生成或维护 Odoo 模块文档与 `static/description/index.html`
   - 恢复 Odoo.sh 备份并配置 `odoo.conf`
-- `tingwu-python`：通义听悟非官方 SDK + CLI + 16 个现成脚本，覆盖上传音视频转写、等待结果、导出 docx/pdf/srt/md、文件夹管理、实时记录、播客链接转写。
-  - 恢复 Odoo.sh 备份并配置 `odoo.conf`
+- `qwen3-tts-daggr-ui`：HuggingFace Space `Qwen3-TTS-Daggr-UI` 的声音克隆 / 语音合成 / 音色设计 / 音频转写。该 Space 不是 Gradio，走自定义 WebSocket 节点图协议，封装为 `scripts/qwen3tts.py` CLI。
