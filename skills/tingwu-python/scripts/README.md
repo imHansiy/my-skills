@@ -4,7 +4,7 @@
 UTF-8 输出，直接跑就行，不用先写 Python。
 
 ```bash
-cd <skill>/scripts
+cd ~/.claude/skills/tingwu-python/scripts
 python <脚本>.py [参数]
 ```
 
@@ -31,6 +31,7 @@ from _bootstrap import client, out, die, add_common, apply_sdk_arg
 | `refresh_ticket.py` | 从 anything-analyzer 抓包库恢复（仅该环境） | 写 |
 | `whoami.py` | 登录态 + 剩余时长 | 读 |
 | `list_dirs.py` | 文件夹与 dirId（供 upload `--dir`） | 读 |
+| `dir.py` | **文件夹增删改 + 移动记录到文件夹** | 写 |
 | `list_trans.py` | 转写记录列表 | 读 |
 | `search.py` | 按名称搜记录 | 读 |
 | `get_result.py` | 取全文 / SRT / VTT / MD，可写文件 | 读 |
@@ -43,6 +44,19 @@ from _bootstrap import client, out, die, add_common, apply_sdk_arg
 | `meeting.py` | 实时记录：创建 / 状态 / 停止 / 改名 | 写 |
 | `netsource.py` | 播客链接转写 | 写 |
 | `probe_action.py` | 探测未封装的 action 能否用 | 读 |
+
+## 文件夹管理
+
+```bash
+python dir.py create 项目A                  # 根目录新建
+python dir.py create 子目录 --parent 工作     # 在某文件夹下新建（名字/路径/dirId 都行）
+python dir.py rename 工作/odoo odoo18
+python dir.py delete 382553                 # 会二次确认，其下记录一并删除
+python dir.py move TRANS_ID --to 工作/odoo   # 记录移到文件夹（0=默认文件夹）
+```
+
+`dir.py` 的 `--parent` / `dir` / `--to` 都接受**文件夹名、路径或 dirId**，
+找不到会报错而不是静默落到根目录。
 
 ## 典型组合
 

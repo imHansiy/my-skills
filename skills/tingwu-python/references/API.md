@@ -111,10 +111,29 @@ c.meeting.doc_save(trans_id, content)      # → saveTransDocEdit
 
 > 开始录音会创建**真实会议**，用完必须 `stop` + 软删记录。
 
-## c.directory
+## c.directory（实测）
 
-`list()` `tree()` `flatten()` `find_by_name()` `create()` `rename()` `delete()` `move()` `has_processing()`
+```python
+c.directory.list() / .tree() / .flatten() / .find_by_name(name)
+c.directory.create("项目A")                    # 根目录新建
+c.directory.create("子目录", parent_dir_id=319288)
+c.directory.rename(dir_id, "新名字")
+c.directory.delete(dir_id)                     # 其下记录会一并删除
+c.directory.move_trans(trans_id, dest_dir_id)  # 移动记录（0=默认文件夹）
+c.directory.has_processing(dir_id)             # 有进行中的转写任务？
+```
 
+- `create` 返回 `data.focusDir`（新建那一项，从 `.dirId` 取新 ID）+ `data.dirList`
+  （完整目录树）。
+- `rename` / `delete` 加了 `returnNewList=1`，所以返回的 `data` 是**新的完整目录列表**
+  （前端靠它刷新树），不是被操作的那一项。
+- **`move_trans` 移动的是转写记录，不是文件夹**。参数是 `destDirId` + `transIds`
+  —— 传 `targetDirId`/`dirIds` 或单数 `transId` 都会 `CMN.ServerError`。
+  文件夹本身没有「移动」接口。
+- `has_processing` 对 `dirId=0`（默认文件夹）返回 `DIR.InvalidRequest`；
+  返回值在 `data.existProcessingTrans`。
+- 删除文件夹前前端会弹确认框提示记录同步删除；文件夹下有进行中的任务时，
+  任务会转入默认文件夹。
 ## 其它
 
 - `c.subscription.gain_daily()` 签到；`remaining_hours()` 剩余时长
