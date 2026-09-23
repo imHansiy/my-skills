@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tingwu"
+version = "0.1.0"
+description = "通义听悟 (tingwu.aliyun.com) 非官方 Python SDK —— 协议级 API 封装"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "anything-analyzer" }]
+keywords = ["tingwu", "aliyun", "transcription", "asr", "sdk"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "requests>=2.28",
+]
+
+[project.optional-dependencies]
+# 协议登录需要 RSA 加密
+login = ["cryptography>=41.0"]
+# 从浏览器 CDP 提取 ticket
+browser = ["websocket-client>=1.6"]
+dev = ["pytest>=7.0", "cryptography>=41.0"]
+
+[project.scripts]
+tingwu = "tingwu.cli:main"
+
+[project.urls]
+Homepage = "https://tingwu.aliyun.com"
+
+[tool.setuptools.packages.find]
+include = ["tingwu*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

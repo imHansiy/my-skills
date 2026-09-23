@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+.probe/
+# 凭据：绝不提交
+ticket.json
+*.srt
+*.vtt
